@@ -457,7 +457,7 @@ local function CalculateScore()
 	PlayersHighestScore = quicksort(tmp, "Score", 0);
 end
 
-trivia = -1; -- Change to -1 on release
+trivia = 0;
 trivia_pos = 0;
 trivia_str = "";
 local function Trivia()
@@ -465,6 +465,7 @@ local function Trivia()
 	if (trivia > 12) then
 		trivia = 0;
 	end
+	trivia_str = "";
 	if (trivia == 0) then
 		local pn = GetRandomPlayerActive();
 		trivia_str = string.format("%s has so far cast %s Blasts!", Players[pn].Name, Players[pn].BlastsCasts);
@@ -474,15 +475,21 @@ local function Trivia()
 	elseif (trivia == 2) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "TrainedWarriors", 0);
-		trivia_str = string.format("%s trained the most Warriors so far with a staggering amount of %s units!", tmp2[7].Name, tmp2[7].TrainedWarriors);
+		if (tmp2[7].TrainedWarriors ~= 0) then
+			trivia_str = string.format("%s trained the most Warriors so far with a staggering amount of %s units!", tmp2[7].Name, tmp2[7].TrainedWarriors);
+		end
 	elseif (trivia == 3) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "BlastsCasts", 0);
-		trivia_str = string.format("%s has cast the most Blast shots! ( %s ) !", tmp2[7].Name, tmp2[7].BlastsCasts);
+		if (tmp2[7].BlastsCasts ~= 0) then
+			trivia_str = string.format("%s has cast the most Blast shots! ( %s ) !", tmp2[7].Name, tmp2[7].BlastsCasts);
+		end
 	elseif (trivia == 4) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "TrainedSpies", 0);
-		trivia_str = string.format("%s trained the most Spies so far with a staggering amount of %s units! <3 Spies", tmp2[7].Name, tmp2[7].TrainedSpies);
+		if (tmp2[7].TrainedSpies ~= 0) then
+			trivia_str = string.format("%s trained the most Spies so far with a staggering amount of %s units! <3 Spies", tmp2[7].Name, tmp2[7].TrainedSpies);
+		end
 	elseif (trivia == 5) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "MaxScore", 0);
@@ -494,7 +501,9 @@ local function Trivia()
 	elseif (trivia == 6) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "TrainedFirewarriors", 0);
-		trivia_str = string.format("%s trained the most Firewarriors so far with a staggering amount of %s units!", tmp2[7].Name, tmp2[7].TrainedFirewarriors);
+		if (tmp2[7].TrainedFirewarriors ~= 0) then
+			trivia_str = string.format("%s trained the most Firewarriors so far with a staggering amount of %s units!", tmp2[7].Name, tmp2[7].TrainedFirewarriors);
+		end
 	elseif (trivia == 7) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "SpellsCast", 0);
@@ -505,7 +514,9 @@ local function Trivia()
 	elseif (trivia == 9) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "TrainedPreachers", 0);
-		trivia_str = string.format("%s trained the most Preachers so far with a staggering amount of %s units!", tmp2[7].Name, tmp2[7].TrainedPreachers);
+		if (tmp2[7].TrainedPreachers ~= 0) then
+			trivia_str = string.format("%s trained the most Preachers so far with a staggering amount of %s units!", tmp2[7].Name, tmp2[7].TrainedPreachers);
+		end
 	elseif (trivia == 10) then
 		local pn = GetRandomPlayerActive();
 		local pn2 = 0;
@@ -745,7 +756,7 @@ function OnFrame()
 end
 
 function OnSave(save)
-	log_msg(TRIBE_NEUTRAL, "OnSave");
+	--log_msg(TRIBE_NEUTRAL, "OnSave");
 	for pn=0,7,1 do
 		-- Save timer first intentionally
 		save:push_int(Players[pn].Timer);
@@ -759,12 +770,12 @@ function OnSave(save)
 		save:push_int(Players[pn].SpellsCast);
 		save:push_int(Players[pn].BlastsCasts);
 	end
-	log_msg(TRIBE_NEUTRAL, "OnSave Exit");
+	--log_msg(TRIBE_NEUTRAL, "OnSave Exit");
 end
 
 -- Do not call Initialize() in here. It's a bad idea.
 function OnLoad(load)
-	log_msg(TRIBE_NEUTRAL, "OnLoad");
+	--log_msg(TRIBE_NEUTRAL, "OnLoad");
 	for pn=7,0,-1 do
 		for m=M_SPELL_BLAST,NUM_SPELL_TYPES,1 do
 			Spells:Disable(pn, m, false);
@@ -788,7 +799,7 @@ function OnLoad(load)
 		Players[pn].State = load:pop_int();
 		Players[pn].Timer = load:pop_int();
 	end
-	log_msg(TRIBE_NEUTRAL, "OnLoad Exit");
+	--log_msg(TRIBE_NEUTRAL, "OnLoad Exit");
 end
 
 ------------------------------------------------------
