@@ -1,8 +1,9 @@
 --[[
 	Author: Toxicity
+	Idea by: Craig (TheBeginning)
 	Repository: https://github.com/Toksisitee/PopulousBetaScripts
 	Written: 22.12.2020
-	Last revision: 25.12.2020
+	Last revision: 04.01.2021
 ]]
 
 import(Module_Game)
@@ -30,11 +31,78 @@ _gsi = gsi();
 _gnsi = gnsi();
 _constants = constants();
 _shapes = {};
-
+_constants.InvisNumPeopleAffected = 3;
+char_width = {
+	["A"] = 10,
+	["B"] = 9,
+	["C"] = 12,
+	["D"] = 11,
+	["E"] = 8,
+	["F"] = 8,
+	["G"] = 12,
+	["H"] = 10,
+	["I"] = 4,
+	["J"] = 4,
+	["K"] = 10,
+	["L"] = 8,
+	["M"] = 14,
+	["N"] = 10,
+	["O"] = 14,
+	["P"] = 9,
+	["Q"] = 13,
+	["R"] = 10,
+	["S"] = 9,
+	["T"] = 10,
+	["U"] = 11,
+	["V"] = 11,
+	["W"] = 16,
+	["X"] = 11,
+	["Y"] = 12,
+	["Z"] = 11,
+	["["] = 7,
+	["\\"] = 11,
+	["]"] = 7,
+	["_"] = 16,
+	["'"] = 5,
+	[" "] = 8,
+	["!"] = 4,
+	["\""] = 8,
+	["#"] = 14,
+	["$"] = 11,
+	["%"] = 16,
+	["&"] = 15,
+	["("] = 6,
+	[")"] = 6,
+	["*"] = 9,
+	["+"] = 10,
+	[","] = 5,
+	["-"] = 11,
+	["."] = 4,
+	["/"] = 11,
+	["0"] = 11,
+	["1"] = 4,
+	["2"] = 11,
+	["3"] = 11,
+	["4"] = 11,
+	["5"] = 11,
+	["6"] = 11,
+	["7"] = 11,
+	["8"] = 12,
+	["9"] = 11,
+	[":"] = 4,
+	[";"] = 4,
+	["<"] = 7,
+	["="] = 14,
+	[">"] = 7,
+	["?"] = 11,
+	["@"] = 17,
+};
 sprite_age_w = { [0]= 4, 2, 4, 4, 4, 4 };
 strings_score_width = { [0]= 25, 35, 45, 55, 65, 75 };
 strings_large_width = { [0]= 150, 100, 80, 93, 133, 80 };
 strings_small_width = { [0]= 95, 63, 49, 59, 82, 50 };
+strings_name_width = { [0]= 85, 85, 85, 85, 85, 85, 85, 85 };
+scores_width = { [0]= 0, 0, 0, 0, 0, 0, 0, 0 }; -- New method
 Font = {
 	Large = P3_LARGE_FONT;
 	Small = P3_SMALL_FONT_NORMAL;
@@ -284,6 +352,25 @@ Players = {
 	};
 };
 
+local function GetStringWidth(str)
+	local w = 0;
+	for i=1,#str,1 do
+		local c = str:sub(i,i)
+		c = string.upper(c);
+		if (char_width[c] ~= nil) then
+			w = w + char_width[c];
+		else
+			w = w + 10 + 2;
+		end
+	end
+	return w;
+end
+
+local function CachePlayerNameWidth(str, pn)
+	local w = GetStringWidth(str);
+	strings_name_width[pn] = w;
+end
+
 local function GetRandomPlayerActive()
 	while true do 
 		pn = G_RANDOM(8);
@@ -299,14 +386,14 @@ local function StartAdvanceTimer(pn)
 end
 
 local function CheckAdvanceRequirements(pn, skip_timer)
-	local advance = false;
-
 	if (Players[pn].Age == Age.Max) or (Players[pn].State ~= AdvanceState.Checking) then
 		return;
 	end
 
+	local advance = false;
+	local tepees = Bldg:GetTepees(pn, true);
+
 	if (Players[pn].Age == Age.Tribal) then
-		tepees = Bldg:GetTepees(pn, true)
 		if (_gsi.Players[pn].NumPeople >= AdvanceReq[Age.Tribal].People and tepees >= AdvanceReq[Age.Tribal].Tepees) then
 			if (_gsi.Players[pn].NumBuildingsOfType[M_BUILDING_SPY_TRAIN] > 0) then
 				advance = true;
@@ -314,20 +401,14 @@ local function CheckAdvanceRequirements(pn, skip_timer)
 		end
 	elseif (Players[pn].Age == Age.Fire) then
 		if (_gsi.Players[pn].NumPeople >= AdvanceReq[Age.Fire].People and tepees >= AdvanceReq[Age.Fire].Tepees) then
-			if (_gsi.Players[pn].NumBuildingsOfType[M_BUILDING_SPY_TRAIN] > 0) then
-				if (_gsi.Players[pn].NumBuildingsOfType[M_BUILDING_WARRIOR_TRAIN] > 0) and (_gsi.Players[pn].NumBuildingsOfType[M_BUILDING_SUPER_TRAIN] > 0) then
-					advance = true;
-				end
+			if (_gsi.Players[pn].NumBuildingsOfType[M_BUILDING_WARRIOR_TRAIN] > 0 and _gsi.Players[pn].NumBuildingsOfType[M_BUILDING_SUPER_TRAIN] > 0) then
+				advance = true;
 			end
 		end
 	elseif (Players[pn].Age == Age.Divine) then
 		if (_gsi.Players[pn].NumPeople >= AdvanceReq[Age.Divine].People and tepees >= AdvanceReq[Age.Divine].Tepees) then
-			if (_gsi.Players[pn].NumBuildingsOfType[M_BUILDING_SPY_TRAIN] > 0) then
-				if (_gsi.Players[pn].NumBuildingsOfType[M_BUILDING_WARRIOR_TRAIN] > 0) and (_gsi.Players[pn].NumBuildingsOfType[M_BUILDING_SUPER_TRAIN] > 0) then
-					if (_gsi.Players[pn].NumBuildingsOfType[M_BUILDING_TEMPLE] > 0) then
-						advance = true;
-					end
-				end
+			if (_gsi.Players[pn].NumBuildingsOfType[M_BUILDING_TEMPLE] > 0) then
+				advance = true;
 			end
 		end
 	end
@@ -392,14 +473,17 @@ local function AdvanceProcess(pn)
 end
 
 local function Initialize()
+	log_msg(TRIBE_NEUTRAL, "Age of Populous!");
 	local delete_shots = false;
 	-- Ensuring this doesn't clear the spell shots in MP. I'm using this method to test locally a lot.
 	if (_gsi.Counts.GameTurn < 12) then 
 		delete_shots = true; 
 	end
+
 	for pn=0,7,1 do
-		if (_gnsi.Flags & GNS_NETWORK == 1) then
+		if ((_gnsi.Flags & GNS_NETWORK) == GNS_NETWORK) then
 			Players[pn].Name = get_player_name(pn, true);
+			CachePlayerNameWidth(Players[pn].Name, pn);
 		end
 		for m=M_SPELL_BLAST,NUM_SPELL_TYPES,1 do
 			Spells:Disable(pn, m, delete_shots);
@@ -451,6 +535,7 @@ local function CalculateScore()
 		AverageTeamScore[i] = math.floor(avg_score / (#allies));
 		AverageTeamScoreDigits[i] = #tostring(avg_score);
 		Players[i].ScoreDigits = #tostring(Players[i].Score);
+		scores_width[i] = GetStringWidth(string.format(": %s/%s", Players[i].Score, AverageTeamScore[i])) + 10;
 	end
 
 	local tmp = deepcopy(Players);
@@ -465,7 +550,6 @@ local function Trivia()
 	if (trivia > 12) then
 		trivia = 0;
 	end
-	trivia_str = "";
 	if (trivia == 0) then
 		local pn = GetRandomPlayerActive();
 		trivia_str = string.format("%s has so far cast %s Blasts!", Players[pn].Name, Players[pn].BlastsCasts);
@@ -475,21 +559,15 @@ local function Trivia()
 	elseif (trivia == 2) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "TrainedWarriors", 0);
-		if (tmp2[7].TrainedWarriors ~= 0) then
-			trivia_str = string.format("%s trained the most Warriors so far with a staggering amount of %s units!", tmp2[7].Name, tmp2[7].TrainedWarriors);
-		end
+		trivia_str = string.format("%s trained the most Warriors so far with a staggering amount of %s units!", tmp2[7].Name, tmp2[7].TrainedWarriors);
 	elseif (trivia == 3) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "BlastsCasts", 0);
-		if (tmp2[7].BlastsCasts ~= 0) then
-			trivia_str = string.format("%s has cast the most Blast shots! ( %s ) !", tmp2[7].Name, tmp2[7].BlastsCasts);
-		end
+		trivia_str = string.format("%s has cast the most Blast shots! ( %s ) !", tmp2[7].Name, tmp2[7].BlastsCasts);
 	elseif (trivia == 4) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "TrainedSpies", 0);
-		if (tmp2[7].TrainedSpies ~= 0) then
-			trivia_str = string.format("%s trained the most Spies so far with a staggering amount of %s units! <3 Spies", tmp2[7].Name, tmp2[7].TrainedSpies);
-		end
+		trivia_str = string.format("%s trained the most Spies so far with a staggering amount of %s units! <3 Spies", tmp2[7].Name, tmp2[7].TrainedSpies);
 	elseif (trivia == 5) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "MaxScore", 0);
@@ -501,9 +579,7 @@ local function Trivia()
 	elseif (trivia == 6) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "TrainedFirewarriors", 0);
-		if (tmp2[7].TrainedFirewarriors ~= 0) then
-			trivia_str = string.format("%s trained the most Firewarriors so far with a staggering amount of %s units!", tmp2[7].Name, tmp2[7].TrainedFirewarriors);
-		end
+		trivia_str = string.format("%s trained the most Firewarriors so far with a staggering amount of %s units!", tmp2[7].Name, tmp2[7].TrainedFirewarriors);
 	elseif (trivia == 7) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "SpellsCast", 0);
@@ -514,9 +590,7 @@ local function Trivia()
 	elseif (trivia == 9) then
 		local tmp = deepcopy(Players);
 		local tmp2 = quicksort(tmp, "TrainedPreachers", 0);
-		if (tmp2[7].TrainedPreachers ~= 0) then
-			trivia_str = string.format("%s trained the most Preachers so far with a staggering amount of %s units!", tmp2[7].Name, tmp2[7].TrainedPreachers);
-		end
+		trivia_str = string.format("%s trained the most Preachers so far with a staggering amount of %s units!", tmp2[7].Name, tmp2[7].TrainedPreachers);
 	elseif (trivia == 10) then
 		local pn = GetRandomPlayerActive();
 		local pn2 = 0;
@@ -554,6 +628,7 @@ function OnCreateThing(t)
 		for k,v in pairs(AllowedSpells[Players[t.Owner].Age]) do
 			if (t.Model == v) then
 				allowed = true;
+				break;
 			end
 		end
 		if (allowed ~= true) then
@@ -571,34 +646,62 @@ function OnCreateThing(t)
 		end
 	end
 	if (t.Type == T_SHAPE) then
-		local allowed = false;
-		for k,v in pairs(AllowedBuildings[Players[t.Owner].Age]) do
-			if (t.u.Shape.BldgModel == v) then
-				allowed = true;
-			end
-		end
-		if (allowed ~= true) then
-			--Bldg:Disable(t.Owner, t.u.Shape.BldgModel); -- Do not remove the building discovery, player might have gotten a Stonehead reward?
-			local objProxy = ObjectProxy.new();
-			objProxy:set(t.ThingNum)
-			table.insert(_shapes, objProxy);
-		else
-			if (t.u.Shape.BldgModel == M_BUILDING_TEPEE) then
-				if (Players[t.Owner].Age ~= Age.Max) then
-					local existing = 0;
-					ProcessGlobalSpecialList(t.Owner, BUILDINGMARKERLIST, function(_t)
-						if (_t.u.Shape.BldgModel == M_BUILDING_TEPEE) then
+		if (t.u.Shape.BldgModel <= M_BUILDING_TEPEE_3) then
+			if (Players[t.Owner].Age ~= Age.Max) then
+				local existing = 1; -- This shape counts as 1, I later have a check (_t ~= t) to ensure I don't add the same shape twice
+				local is_bldg = false;
+
+				-- If you think this is not needed, think again
+				-- Do not fucking touch, future me
+				--local me = MAP_ELEM_IDX_2_PTR(world_coord2d_to_map_idx(t.Pos.D2));
+				--local bldg = me.ShapeOrBldgIdx:get();
+				--if (bldg ~= nil) then -- Need to make sure it's not a building under construction
+					--is_bldg = true;
+				--	existing = existing - 1;
+				--end
+				
+				ProcessGlobalSpecialList(t.Owner, BUILDINGMARKERLIST, function(_t)
+					if (_t.u.Shape.BldgModel <= M_BUILDING_TEPEE_3) then
+						if (_t ~= t) then
+							local me = MAP_ELEM_IDX_2_PTR(world_coord2d_to_map_idx(_t.Pos.D2));
+							local bldg = me.ShapeOrBldgIdx:get();
+							if (bldg ~= nil and bldg.Type == T_BUILDING and bldg.State == S_BUILDING_STAND) then -- Need to make sure it's not a building under construction
+								existing = existing - 1;
+								--local c3d = Coord3D.new();
+								--map_idx_to_world_coord3d(world_coord2d_to_map_idx(_t.Pos.D2), c3d);
+								--createThing(T_EFFECT, M_EFFECT_CONVERT_WILD, 0, c3d, false, false);
+							end
+
 							existing = existing + 1;
 						end
-						return true
-					end);
-					existing = existing + Bldg:GetTepees(t.Owner, true);
-					if (existing > MaxTepees[Players[t.Owner].Age]) then
+					end
+					return true
+				end);
+
+				existing = existing + Bldg:GetTepees(t.Owner, true);
+				--log_msg(0, "Existing " .. existing .. ", Max: " .. MaxTepees[Players[t.Owner].Age])
+				if (existing > MaxTepees[Players[t.Owner].Age]) then
+					--if (is_bldg == false) then
+						--log_msg(0, "Added to list")
 						local objProxy = ObjectProxy.new();
 						objProxy:set(t.ThingNum)
 						table.insert(_shapes, objProxy);
-					end
+					--end
 				end
+			end
+		else
+			local allowed = false;
+			for k,v in pairs(AllowedBuildings[Players[t.Owner].Age]) do
+				if (t.u.Shape.BldgModel == v) then
+					allowed = true;
+					break;
+				end
+			end
+			if (allowed ~= true) then
+				--Bldg:Disable(t.Owner, t.u.Shape.BldgModel); -- Do not remove the building discovery, player might have gotten a Stonehead reward?
+				local objProxy = ObjectProxy.new();
+				objProxy:set(t.ThingNum)
+				table.insert(_shapes, objProxy);
 			end
 		end
 	end
@@ -615,6 +718,16 @@ function OnCreateThing(t)
 	end
 end
 
+local function CleanShapesTable()
+	local tbl = {};
+	for i=0,#_shapes,1 do
+		if (_shapes[i] ~= nil) then
+			table.insert(tbl, _shapes[i]);
+		end
+	end
+	_shapes = tbl;
+end
+
 function OnTurn()
 	if (#_shapes > 0) then
 		local i = 1;
@@ -622,6 +735,17 @@ function OnTurn()
 			if (_shapes[i] ~= nil) then
 				if (v:isNull() ~= true) then
 					local t = v:get();
+					local me = MAP_ELEM_IDX_2_PTR(world_coord2d_to_map_idx(t.Pos.D2));
+					local bldg = me.ShapeOrBldgIdx:get();
+					if (bldg == nil) then
+						process_shape_map_elements(world_coord2d_to_map_idx(t.Pos.D2), t.u.Shape.BldgModel, t.u.Shape.Orient, t.Owner, SHME_MODE_REMOVE_PERM);
+					elseif (bldg.Type ~= T_BUILDING) then
+						--if (bldg.u.Bldg.HasBuildingExistedBefore == 0) then -- Doesn't make sense to check for this, since it's not a building
+							process_shape_map_elements(world_coord2d_to_map_idx(t.Pos.D2), t.u.Shape.BldgModel, t.u.Shape.Orient, t.Owner, SHME_MODE_REMOVE_PERM);
+						--end
+					end
+				
+					_shapes[i] = nil;
 					--[[
 					local me = MAP_ELEM_IDX_2_PTR(world_coord2d_to_map_idx(t.Pos.D2));
 					null = ObjectProxy.new();
@@ -634,14 +758,13 @@ function OnTurn()
 					_shapes[i] = nil;
 					--DestroyThing(t);
 					]]
-					process_shape_map_elements(world_coord2d_to_map_idx(t.Pos.D2), t.u.Shape.BldgModel, t.u.Shape.Orient, t.Owner, SHME_MODE_REMOVE_PERM);
-					_shapes[i] = nil;
-	
 				end
 			end
 			i = i + 1;
 		end
 	end
+
+	CleanShapesTable();
 
 	if (EVERY_2POW_TURNS(3)) then
 		CalculateScore();
@@ -694,67 +817,116 @@ function CacheStringsWidth()
 	end
 end
 
+local function DrawRequirements(pn, offset)
+	if (Players[pn].Age == Age.Max) then
+		return;
+	end
+
+	local tepees = Bldg:GetTepees(pn, true);
+	local str = string.format("Population: %s/%s  Huts: %s/%s  ", _gsi.Players[pn].NumPeople, AdvanceReq[Age.Tribal].People, tepees, AdvanceReq[Age.Tribal].Tepees);
+	if (Players[pn].Age == Age.Tribal) then
+		str = str .. string.format("Spy Hut: %s/1", _gsi.Players[pn].NumBuildingsOfType[M_BUILDING_SPY_TRAIN]);
+	elseif (Players[pn].Age == Age.Fire) then
+		str = str .. string.format("Warrior Hut: %s/1  FW Hut: %s/1", _gsi.Players[pn].NumBuildingsOfType[M_BUILDING_WARRIOR_TRAIN], _gsi.Players[pn].NumBuildingsOfType[M_BUILDING_SUPER_TRAIN]);
+	elseif (Players[pn].Age == Age.Divine) then
+		str = str .. string.format("Temple: %s/1", _gsi.Players[pn].NumBuildingsOfType[M_BUILDING_TEMPLE]);
+	end
+
+	LbDraw_Text(250, ScreenHeight()-20, str , 0);
+end
+
 bar_w = 200;
 bar_h = 15;
 box_y_offset = 20;
 offset_incr = 30;
+names_offset = 40;
 function OnFrame()
 	offset = 0;
 	for i=0,7,1 do
 		local pn = PlayersHighestScore[i].ID;
-		local age = Players[pn].Age;
-		local scale = 0;
-		text_y_offset = -2;
-		local score_width = strings_score_width[Players[pn].ScoreDigits]
-		local avg_score_width = strings_score_width[AverageTeamScoreDigits[pn]];
-		if (ScreenWidth() >= 1200) then
-			scale = math.floor(ScreenHeight() * 0.01);
+		if (Players[pn].MaxScore ~= 0) then -- Show only active players (or previously active but now dead)
+			local age = Players[pn].Age;
 			PopSetFont(Font.Large);
-			text_y_offset = 2 - math.ceil((bar_h/2)-2);
-		else
-			PopSetFont(Font.Small);
-		end
-		if (Players[pn].AdvanceAlertTimer ~= 0) then
-			DrawBox(ScreenWidth()-math.floor(bar_w*0.70), ScreenHeight()-box_y_offset-scale-offset, 25, bar_h+scale, Players[pn].Color);
-			if (_gsi.Counts.GameTurn & 2 == 0) then
-				LbDraw_Text(ScreenWidth()-math.floor(bar_w*0.50), ScreenHeight()-box_y_offset-scale-text_y_offset-offset, "ADVANCED!", 10); 
+			local scale = math.floor(ScreenHeight() * 0.01);
+			local score_width = scores_width[pn];
+			local text_y_offset = 2 - math.ceil((bar_h/2)-2);
+			if (Players[pn].AdvanceAlertTimer ~= 0) then
+				DrawBox(ScreenWidth()-math.floor(bar_w*0.70), ScreenHeight()-box_y_offset-scale-offset, 25, bar_h+scale, Players[pn].Color);
+				if (_gsi.Counts.GameTurn & 2 == 0) then
+					LbDraw_Text(ScreenWidth()-math.floor(bar_w*0.50), ScreenHeight()-box_y_offset-scale-text_y_offset-offset, "ADVANCED!", 10); 
+				end
+				LbDraw_ScaledSprite(ScreenWidth()-math.floor(bar_w*0.55)-32+sprite_age_w[age], ScreenHeight()-box_y_offset-scale-offset+6, get_sprite(0, 219+age), 16, 16);
+			elseif (Players[pn].State == AdvanceState.InProgress and AdvanceTimers[age] ~= 0) then
+				DrawBox(ScreenWidth()-(bar_w+5), ScreenHeight()-box_y_offset-scale-offset, bar_w+2, bar_h+scale+2, 1);
+				DrawBox(ScreenWidth()-(bar_w+5), ScreenHeight()-box_y_offset-scale-offset, bar_w, bar_h+scale, 0);
+				local progress = Players[pn].Timer * 100 / AdvanceTimers[age];
+				progress = (bar_w * Players[pn].Timer) / AdvanceTimers[age];
+		
+				DrawBox(ScreenWidth()-(bar_w+5), ScreenHeight()-box_y_offset-scale-offset, math.floor(bar_w-progress), bar_h+scale, Players[pn].Color);
+				LbDraw_Text(ScreenWidth()-bar_w, ScreenHeight()-box_y_offset-scale-text_y_offset-offset, AgeStrings[age + 1] .. " AGE", 0);
+			else
+				-- Do not change this string without updating scores_width
+				local str = string.format(": %s/%s",Players[pn].Score, AverageTeamScore[pn]);
+				DrawBox(ScreenWidth()-score_width-32-strings_name_width[pn], ScreenHeight()-box_y_offset-scale-offset, 25, bar_h+scale, Players[pn].Color);
+				LbDraw_Text(ScreenWidth()-score_width-strings_name_width[pn], ScreenHeight()-box_y_offset-scale-text_y_offset-offset, Players[pn].Name, 0);
+				LbDraw_Text(ScreenWidth()-score_width, ScreenHeight()-box_y_offset-scale-text_y_offset-offset, str, 0);
+				LbDraw_ScaledSprite(ScreenWidth()-score_width-32+sprite_age_w[age]-strings_name_width[pn], ScreenHeight()-box_y_offset-scale-offset+6, get_sprite(0, 219+age), 16, 16);
 			end
-			LbDraw_ScaledSprite(ScreenWidth()-math.floor(bar_w*0.55)-32+sprite_age_w[age], ScreenHeight()-box_y_offset-scale-offset+6, get_sprite(0, 219+age), 16, 16);
-		elseif (Players[pn].State == AdvanceState.InProgress and AdvanceTimers[age] ~= 0) then
-			--DrawBox(ScreenWidth()-bar_w-35, ScreenHeight()-box_y_offset-scale-offset, 25, bar_h+scale, Players[pn].Color);
-			DrawBox(ScreenWidth()-(bar_w+5), ScreenHeight()-box_y_offset-scale-offset, bar_w+2, bar_h+scale+2, 1);
-			DrawBox(ScreenWidth()-(bar_w+5), ScreenHeight()-box_y_offset-scale-offset, bar_w, bar_h+scale, 0);
-			local progress = Players[pn].Timer * 100 / AdvanceTimers[age];
-			progress = (bar_w * Players[pn].Timer) / AdvanceTimers[age];
-	
-			DrawBox(ScreenWidth()-(bar_w+5), ScreenHeight()-box_y_offset-scale-offset, math.floor(bar_w-progress), bar_h+scale, Players[pn].Color);
-			LbDraw_Text(ScreenWidth()-bar_w, ScreenHeight()-box_y_offset-scale-text_y_offset-offset, AgeStrings[age + 1] .. " AGE", 0);
-			--offset = offset + offset_incr;
-		else
-			--DrawBox(ScreenWidth()-math.floor(bar_w*0.70), ScreenHeight()-box_y_offset-scale-offset, 25, bar_h+scale, Players[pn].Color);
-			--LbDraw_Text(ScreenWidth()-math.floor(bar_w*0.55), ScreenHeight()-box_y_offset-scale-text_y_offset-offset, AgeStrings[age], 0);
-			local str = ": " .. Players[pn].Score .. "/" .. AverageTeamScore[pn];
-			--avg_score_width = string_width(str) + 15; (string_width)
-			DrawBox(ScreenWidth()-score_width-avg_score_width-32, ScreenHeight()-box_y_offset-scale-offset, 25, bar_h+scale, Players[pn].Color);
-			--LbDraw_Text(ScreenWidth()-score_width, ScreenHeight()-box_y_offset-scale-text_y_offset-offset, AgeStrings[age] .. " AGE", 0);
-			LbDraw_Text(ScreenWidth()-score_width-avg_score_width, ScreenHeight()-box_y_offset-scale-text_y_offset-offset, str, 0);
-			--LbDraw_Text(ScreenWidth()-avg_score_width, ScreenHeight()-box_y_offset-scale-text_y_offset-offset, str, 0); (string_width)
-			LbDraw_ScaledSprite(ScreenWidth()-score_width-avg_score_width-32+sprite_age_w[age], ScreenHeight()-box_y_offset-scale-offset+6, get_sprite(0, 219+age), 16, 16);
+			offset = offset + offset_incr;
 		end
-		offset = offset + offset_incr;
 	end
+
+	--if (GUICurrentMenu ~= nil) then
+		if (_gnsi.Flags & GNS_PAUSED == 0) then
+			local pn = _gnsi.PlayerNum;
+			if (Players[pn].Age ~= Age.Max) then
+				local gw = GFGetGuiWidth();
+				local menu = GUICurrentMenu();
+				if (menu== 3 or menu == 6) then
+					if (Players[pn].Age ~= Age.Max) then
+						local tepee_req = string.format("%s/%s", Bldg:GetTepees(pn, true), AdvanceReq[Players[pn].Age].Tepees);
+						LbDraw_Text(math.floor(gw*0.26), math.floor(ScreenHeight()*0.51), tepee_req, 0);
+						if (Players[pn].Age == Age.Tribal) then
+							LbDraw_Text(math.floor(gw*0.34), math.floor(ScreenHeight()*0.735), string.format("%s/1", _gsi.Players[pn].NumBuildingsOfType[M_BUILDING_SPY_TRAIN]), 0);
+						elseif (Players[pn].Age == Age.Fire) then
+							LbDraw_Text(math.floor(gw*0.29), math.floor(ScreenHeight()*0.625), string.format("%s/1", _gsi.Players[pn].NumBuildingsOfType[M_BUILDING_WARRIOR_TRAIN]), 0);
+							LbDraw_Text(math.floor(gw*0.74), math.floor(ScreenHeight()*0.735), string.format("%s/1", _gsi.Players[pn].NumBuildingsOfType[M_BUILDING_SUPER_TRAIN]), 0);
+						elseif  (Players[pn].Age == Age.Divine) then
+							LbDraw_Text(math.floor(gw*0.74), math.floor(ScreenHeight()*0.625), string.format("%s/1", _gsi.Players[pn].NumBuildingsOfType[M_BUILDING_TEMPLE]), 0);
+						end
+					end
+				elseif (menu == 4) then
+					local people_req = string.format("Population: %s/%s", _gsi.Players[pn].NumPeople, AdvanceReq[Players[pn].Age].People);
+					local max_tepees = string.format("Max Huts: %s", MaxTepees[Players[pn].Age]);
+					--DrawBox(math.floor(gw*0.04), math.floor(ScreenHeight()*0.396), GFGetGuiWidth()-13, 24, Players[pn].Color);
+					DrawBox(0, math.floor(ScreenHeight()*0.78), gw, ScreenHeight(), 1);
+					LbDraw_Text(7, math.floor(ScreenHeight()*0.80), people_req, 0);
+					LbDraw_Text(7, math.floor(ScreenHeight()*0.83), max_tepees, 0);
+				end
+			end
+		end
+	--end
+	--LbDraw_ScaledSprite(math.floor(ScreenWidth()*0.06), math.floor(ScreenHeight()*0.51), get_sprite(0, 219), 16, 16);
+
 
 	if (trivia_pos < ScreenWidth() + 500) then
-		if (ScreenWidth() >= 1200) then
-			PopSetFont(Font.Large);
-		else
-			PopSetFont(Font.Small);
-		end
+		PopSetFont(Font.Large);
 		LbDraw_Text(trivia_pos, ScreenHeight()-20, trivia_str, 0);
 		trivia_pos = trivia_pos + 1;
+		--DrawRequirements(0, 20);	
+	--else
+	--	DrawRequirements(_gnsi.PlayerNum, 20);
 	end
 end
-
+--[[
+function OnChat(from, str)
+	if (str == "/names") then
+		if (gnsi.PlayerNum == from) then
+			show_names = true;
+		end
+	end
+end
+]]
 function OnSave(save)
 	--log_msg(TRIBE_NEUTRAL, "OnSave");
 	for pn=0,7,1 do
@@ -806,6 +978,7 @@ end
 ------------------------------------------------------
 ------------------------------------------------------
 ------------------------------------------------------
+
 --[[
 import(Module_Helpers)
 pndbg = 0
@@ -818,15 +991,17 @@ function OnKeyDown(k)
 		pndbg = pndbg + 2;
 		--AdvanceAge(0, Players[0].Age + 1)
 	elseif k == LB_KEY_2 then
-		Trivia();
+		log_msg(0, "GUICurrentMenu " .. GUICurrentMenu())
+		--Trivia();
 		--Initialize();
 		--StartAdvanceTimer(0);
-		for i=0,1,1 do
-		AdvanceAge(i, Players[i].Age + 1)
-		end
+		--for i=0,1,1 do
+		--AdvanceAge(i, Players[i].Age + 1)
+		--end
 	end
 end
 ]]
+
 ------------------------------------------------------
 ------------------------------------------------------
 ------------------------------------------------------
